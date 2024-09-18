@@ -1,0 +1,89 @@
+.auth-page {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    height: 100vh;
+    background-color: #f0f2f5;
+  }
+  
+  .image-section {
+    flex: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .background-image {
+    max-width: 100%; 
+    max-height: 100%; 
+    object-fit: contain; 
+  }
+  
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: #fff;
+    border-left: 1px solid #ddd;
+  }
+  
+  .form-section h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .card {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+  }
+  
+  .card-button {
+    display: block;
+    margin: 20px auto 0;
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    text-decoration: underline;
+  }
+  
+  .card-button:hover {
+    text-decoration: none;
+  }
+  
+  .login-form, .sign-up-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .login-form input, .sign-up-form input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  .login-form button, .sign-up-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .login-form button:hover, .sign-up-form button:hover {
+    background-color: #0056b3;
+  }

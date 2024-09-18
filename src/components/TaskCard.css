@@ -1,0 +1,56 @@
+/* src/components/TaskCard.css */
+.task-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 8px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.task-card h3 {
+  margin-top: 0;
+}
+
+.task-info {
+  margin-bottom: 8px;
+}
+
+.task-description {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.task-status {
+  font-size: 14px;
+  color: #333;
+}
+
+.task-assigned-to {
+  margin-top: 8px;
+}
+
+.user-avatars {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.view-details-link {
+  display: inline-block;
+  margin-top: 12px;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.view-details-link:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,53 @@
+/* src/components/Navbar.css */
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    background-color: #003366;
+    color: white;
+    height: 60px;
+  }
+  
+  .navbar-header .app-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #cce7ff;
+  }
+  
+  .navbar-links {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .navbar-links li {
+    display: flex;
+    align-items: center;
+  }
+  
+  .navbar-links a {
+    color: #cce7ff;
+    text-decoration: none;
+    font-size: 16px;
+  }
+  
+  .navbar-links a:hover {
+    color: #99c2ff;
+  }
+  
+  .logout-button {
+    background: none;
+    border: none;
+    color: #cce7ff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .logout-button:hover {
+    color: #99c2ff;
+  }
+  
