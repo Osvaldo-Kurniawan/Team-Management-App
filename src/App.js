@@ -20,6 +20,16 @@ const PrivateRoute = ({ component: Component }) => {
   return user ? <Component /> : <Navigate to="/" />;
 };
 
+const PublicRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return user ? <Navigate to="/dashboard" /> : <Auth />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -27,7 +37,7 @@ function App() {
         <div className="App">
           <Navbar />
           <Routes>
-            <Route path="/" element={<Auth />} />
+            <Route path="/" element={<PublicRoute />} />
             <Route path="/dashboard" element={<PrivateRoute component={Dashboard} />} />
             <Route path="/create-project" element={<PrivateRoute component={CreateProject} />} />
             <Route path="/create-task" element={<PrivateRoute component={CreateTask} />} />

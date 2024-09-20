@@ -10,6 +10,7 @@ function TaskDetail() {
   const navigate = useNavigate();
   const [task, setTask] = useState(null);
   const [status, setStatus] = useState('');
+  const [assignedUsers, setAssignedUsers] = useState({});
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -17,6 +18,17 @@ function TaskDetail() {
       if (taskDoc.exists()) {
         setTask({ id: taskDoc.id, ...taskDoc.data() });
         setStatus(taskDoc.data().status || 'In Progress');
+
+        // Fetch user data for assigned users
+        const userDataPromises = taskDoc.data().assignedTo.map(userId => getDoc(doc(db, 'users', userId)));
+        const userSnapshots = await Promise.all(userDataPromises);
+        const userData = userSnapshots.reduce((acc, snapshot) => {
+          if (snapshot.exists()) {
+            acc[snapshot.id] = snapshot.data();
+          }
+          return acc;
+        }, {});
+        setAssignedUsers(userData);
       }
     };
     fetchTask();
@@ -42,8 +54,6 @@ function TaskDetail() {
       <div className="task-content">
         <div className="task-info">
           <h2>{task.name}</h2>
-          <p className="task-meta">By {task.createdBy}</p>
-          <p className="task-meta">Project due by {task.dueDate}</p>
           <p className="task-description">{task.description}</p>
           <div className="status-container">
             <strong>Status:</strong>
@@ -54,10 +64,15 @@ function TaskDetail() {
             </select>
           </div>
           <div className="assigned-to">
-            <p>project is Assigned to:</p>
+            <p>Project is Assigned to:</p>
             <div className="avatar-group">
-              {task.assignedTo && task.assignedTo.map((user, index) => (
-                <img key={index} src={user.avatarUrl} alt={user.name} className="avatar" />
+              {task.assignedTo && task.assignedTo.map((userId, index) => (
+                <img 
+                  key={index} 
+                  src={assignedUsers[userId]?.avatarURL || '/default-avatar.png'}
+                  alt={assignedUsers[userId]?.name || 'User'} 
+                  className="avatar" 
+                />
               ))}
             </div>
           </div>

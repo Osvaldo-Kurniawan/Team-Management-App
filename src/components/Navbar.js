@@ -1,5 +1,6 @@
 // src/components/Navbar.js
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { updateDoc, doc } from 'firebase/firestore';
@@ -28,7 +29,9 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-header">
-        <h1 className="app-name">Team Management App</h1>
+        <Link to="/" className="app-name-link">
+          <h1 className="app-name">Team Project Management App</h1>
+        </Link>
       </div>
       <ul className="navbar-links">
         {user && (

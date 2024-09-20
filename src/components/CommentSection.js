@@ -122,24 +122,28 @@ function CommentSection({ taskId }) {
   return (
     <div className="comment-section task-info">
       <h3>Project comments</h3>
-      <ul className="comment-list">
-        {comments.map(comment => (
-          <li key={comment.id} className="comment">
-            <div className="comment-header">
-              <img 
-                src={users[comment.userId]?.avatarURL || '/default-avatar.png'} 
-                alt={users[comment.userId]?.username || 'User'} 
-                className="user-avatar"
-              />
-              <div className="comment-meta">
-                <strong>{users[comment.userId]?.username || 'Anonymous'}</strong>
-                <span className="comment-time">{formatDate(comment.createdAt)}</span>
+      {comments.length > 0 ? (
+        <ul className="comment-list">
+          {comments.map(comment => (
+            <li key={comment.id} className="comment">
+              <div className="comment-header">
+                <img 
+                  src={users[comment.userId]?.avatarURL || '/default-avatar.png'} 
+                  alt={users[comment.userId]?.username || 'User'} 
+                  className="user-avatar"
+                />
+                <div className="comment-meta">
+                  <strong>{users[comment.userId]?.username || 'Anonymous'}</strong>
+                  <span className="comment-time">{formatDate(comment.createdAt)}</span>
+                </div>
               </div>
-            </div>
-            <p className="comment-content">{comment.content}</p>
-          </li>
-        ))}
-      </ul>
+              <p className="comment-content">{comment.content}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="no-comments-message">No comments available for this task.</p>
+      )}
       <form onSubmit={handleSubmit} className="comment-form">
         <textarea
           value={newComment}

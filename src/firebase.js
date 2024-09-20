@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, doc, getDoc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc, updateDoc, deleteDoc, getDocs, writeBatch, where, query} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -51,4 +51,34 @@ export const fetchUserDetails = async (userIds) => {
     id: doc.id,
     ...doc.data()
   }));
+};
+
+export const deleteProjectAndTasks = async (projectId) => {
+  const batch = writeBatch(db);
+
+  // Delete the project document
+  const projectRef = doc(db, 'projects', projectId);
+  batch.delete(projectRef);
+
+  // Query for all tasks associated with the project
+  const taskQuery = query(collection(db, 'tasks'), where('projectId', '==', projectId));
+  const taskSnapshot = await getDocs(taskQuery);
+
+  for (const taskDoc of taskSnapshot.docs) {
+    // Delete each task document
+    const taskRef = taskDoc.ref;
+    batch.delete(taskRef);
+
+    // Query for all comments associated with the task
+    const commentQuery = query(collection(db, 'comments'), where('taskId', '==', taskDoc.id));
+    const commentSnapshot = await getDocs(commentQuery);
+
+    // Delete each comment document
+    commentSnapshot.forEach((commentDoc) => {
+      batch.delete(commentDoc.ref);
+    });
+  }
+
+  // Commit the batch operation
+  await batch.commit();
 };

@@ -26,15 +26,28 @@ function Dashboard() {
         const tasksData = await fetchData('tasks');
         const filteredTasks = tasksData.filter(task => task.projectId === selectedProject.id);
         setTasks(filteredTasks);
+      } else {
+        setTasks([]);
       }
     };
     loadTasks();
   }, [selectedProject]);
 
+  const handleProjectDeleted = (deletedProjectId) => {
+    setProjects(projects.filter(project => project.id !== deletedProjectId));
+    if (selectedProject && selectedProject.id === deletedProjectId) {
+      setSelectedProject(null);
+    }
+  };
+
   return (
     <div className="dashboard">
       <div className="sidebar">
-        <Sidebar projects={projects} onSelectProject={setSelectedProject} />
+        <Sidebar 
+          projects={projects} 
+          onSelectProject={setSelectedProject} 
+          onProjectDeleted={handleProjectDeleted}
+        />
       </div>
       <div className="main-content">
         <h1>Dashboard</h1>
