@@ -4,12 +4,12 @@ import { getFirestore, collection, doc, getDoc, updateDoc, deleteDoc, getDocs, w
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDdc6Os8Y3vBCTO-HGlmTZJtoW9c8fHyZI",
-  authDomain: "teammanagementbackend.firebaseapp.com",
-  projectId: "teammanagementbackend",
-  storageBucket: "teammanagementbackend.appspot.com",
-  messagingSenderId: "598169755135",
-  appId: "1:598169755135:web:477187053f9e199521dbca"
+  apiKey: "AIzaSyA4jvpU6zDzXqvVF0i6eOYTR5noEOkazN0",
+  authDomain: "teammanagementbackend-91544.firebaseapp.com",
+  projectId: "teammanagementbackend-91544",
+  storageBucket: "teammanagementbackend-91544.appspot.com",
+  messagingSenderId: "68958152151",
+  appId: "1:68958152151:web:1faed9c9eea3013df1d792"
 };
 
 const app = initializeApp(firebaseConfig);
