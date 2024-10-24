@@ -1,5 +1,5 @@
 // main.js
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -31,11 +31,18 @@ function createWindow() {
     const mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
-        icon: path.join(__dirname, 'assets', 'icon.ico'), // Menambahkan icon
+        icon: path.join(__dirname, 'assets', 'icon.ico'),
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+            nodeIntegration: false, 
+            contextIsolation: true, 
+            preload: path.join(__dirname, 'preload.js')
         },
+    });
+
+    // Handle minimize window request from renderer
+    ipcMain.on('minimize-window', () => {
+        writeToLog('Window minimized via shortcut');
+        mainWindow.minimize();
     });
 
     mainWindow.loadURL('https://teammanagementbackend-91544.web.app/');

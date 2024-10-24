@@ -9,6 +9,7 @@ import CreateTask from './pages/CreateTask';
 import TaskDetail from './pages/TaskDetail';
 import UserProfile from './pages/UserProfile';
 import './App.css';
+import ShortcutHandler from './components/ShortcutHandler';
 
 const PrivateRoute = ({ component: Component }) => {
   const { user, loading } = useAuth();
@@ -35,6 +36,7 @@ function App() {
     <AuthProvider>
       <Router>
         <div className="App">
+          <ShortcutHandler />
           <Navbar />
           <Routes>
             <Route path="/" element={<PublicRoute />} />
