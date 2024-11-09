@@ -16,11 +16,12 @@ function TaskDetail() {
     const fetchTask = async () => {
       const taskDoc = await getDoc(doc(db, 'tasks', id));
       if (taskDoc.exists()) {
-        setTask({ id: taskDoc.id, ...taskDoc.data() });
-        setStatus(taskDoc.data().status || 'In Progress');
+        const taskData = taskDoc.data();
+        setTask({ id: taskDoc.id, ...taskData });
+        setStatus(taskData.status || 'In Progress');
 
         // Fetch user data for assigned users
-        const userDataPromises = taskDoc.data().assignedTo.map(userId => getDoc(doc(db, 'users', userId)));
+        const userDataPromises = taskData.assignedTo.map(userId => getDoc(doc(db, 'users', userId)));
         const userSnapshots = await Promise.all(userDataPromises);
         const userData = userSnapshots.reduce((acc, snapshot) => {
           if (snapshot.exists()) {
@@ -49,12 +50,17 @@ function TaskDetail() {
 
   if (!task) return <div className="loading">Loading...</div>;
 
+  const formattedDeadline = task.deadline ? new Date(task.deadline.seconds * 1000).toLocaleDateString() : 'No deadline set';
+
   return (
     <div className="task-detail">
       <div className="task-content">
         <div className="task-info">
           <h2>{task.name}</h2>
           <p className="task-description">{task.description}</p>
+          <div className="deadline-container">
+            <strong>Deadline:</strong>{formattedDeadline}
+          </div>
           <div className="status-container">
             <strong>Status:</strong>
             <select value={status} onChange={handleStatusChange} className="status-select">
@@ -64,7 +70,7 @@ function TaskDetail() {
             </select>
           </div>
           <div className="assigned-to">
-            <p>Project is Assigned to:</p>
+            <p>Assigned to:</p>
             <div className="avatar-group">
               {task.assignedTo && task.assignedTo.map((userId, index) => (
                 <img 

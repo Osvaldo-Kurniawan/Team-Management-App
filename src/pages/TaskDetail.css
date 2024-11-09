@@ -52,8 +52,14 @@
     margin-top: 15px;
     margin-bottom: 20px;
   }
+
+  .deadline-container {
+    display: flex;
+    margin-bottom: 10px;
+  }
   
   .status-container {
+    display: flex;
     margin-bottom: 15px;
   }
   

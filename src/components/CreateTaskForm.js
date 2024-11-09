@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import './CreateTaskForm.css';
 
 function CreateTaskForm({ projects, onTaskCreated }) {
@@ -10,6 +12,7 @@ function CreateTaskForm({ projects, onTaskCreated }) {
   const [projectId, setProjectId] = useState('');
   const [assignedTo, setAssignedTo] = useState([]);
   const [users, setUsers] = useState([]);
+  const [deadline, setDeadline] = useState(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -37,13 +40,15 @@ function CreateTaskForm({ projects, onTaskCreated }) {
         description,
         projectId,
         assignedTo,
+        deadline,
         createdAt: new Date()
       });
-      onTaskCreated({ id: docRef.id, name: taskName, description, projectId, assignedTo });
+      onTaskCreated({ id: docRef.id, name: taskName, description, projectId, assignedTo, deadline });
       setTaskName('');
       setDescription('');
       setProjectId('');
       setAssignedTo([]);
+      setDeadline(null);
     } catch (error) {
       console.error("Error adding task: ", error);
     }
@@ -93,6 +98,15 @@ function CreateTaskForm({ projects, onTaskCreated }) {
           );
         })}
       </div>
+      <p>Select Deadline</p>
+      <DatePicker
+        selected={deadline}
+        onChange={(date) => setDeadline(date)}
+        dateFormat="dd/MM/yyyy"
+        className="form-input"
+        placeholderText="Select a deadline"
+        required
+      />
       <button className="form-button" type="submit">Create Task</button>
     </form>
   );
