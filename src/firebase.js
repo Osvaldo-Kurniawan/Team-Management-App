@@ -1,3 +1,4 @@
+// src/Firebase.js
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, doc, getDoc, updateDoc, deleteDoc, getDocs, writeBatch, where, query} from 'firebase/firestore';
