@@ -1,7 +1,7 @@
 // src/components/CreateTaskForm.js
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './CreateTaskForm.css';
@@ -11,21 +11,67 @@ function CreateTaskForm({ projects, onTaskCreated }) {
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState('');
   const [assignedTo, setAssignedTo] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [projectMembers, setProjectMembers] = useState([]);
   const [deadline, setDeadline] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const usersCollection = await getDocs(collection(db, 'users'));
-      const usersList = usersCollection.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setUsers(usersList);
+    const fetchProjectMembers = async () => {
+      if (!projectId) {
+        setProjectMembers([]);
+        setAssignedTo([]);
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
+      try {
+        const membersQuery = query(
+          collection(db, 'projectMembers'),
+          where('projectId', '==', projectId)
+        );
+        const membersDocs = await getDocs(membersQuery);
+        
+        if (membersDocs.empty) {
+          setProjectMembers([]);
+          setLoading(false);
+          return;
+        }
+
+        const memberPromises = membersDocs.docs.map(async (memberDoc) => {
+          const userId = memberDoc.data().userId;
+          const userDoc = await getDoc(doc(db, 'users', userId));
+          
+          if (userDoc.exists()) {
+            return {
+              id: userDoc.id,
+              ...userDoc.data()
+            };
+          }
+          return null;
+        });
+
+        const members = await Promise.all(memberPromises);
+        const validMembers = members.filter(member => member !== null);
+        
+        setProjectMembers(validMembers);
+      } catch (error) {
+        console.error("Error fetching project members:", error);
+        setError('Failed to load project members');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchUsers();
-  }, []);
+    fetchProjectMembers();
+  }, [projectId]);
+
+  const handleProjectChange = (e) => {
+    setProjectId(e.target.value);
+    setAssignedTo([]);
+  };
 
   const handleUserChange = (e) => {
     const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
@@ -34,16 +80,26 @@ function CreateTaskForm({ projects, onTaskCreated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     try {
-      const docRef = await addDoc(collection(db, 'tasks'), {
+      const taskData = {
         name: taskName,
         description,
         projectId,
         assignedTo,
-        deadline,
-        createdAt: new Date()
+        deadline: deadline ? deadline.toISOString() : null,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      const docRef = await addDoc(collection(db, 'tasks'), taskData);
+      
+      onTaskCreated({
+        id: docRef.id,
+        ...taskData
       });
-      onTaskCreated({ id: docRef.id, name: taskName, description, projectId, assignedTo, deadline });
+      
       setTaskName('');
       setDescription('');
       setProjectId('');
@@ -51,18 +107,25 @@ function CreateTaskForm({ projects, onTaskCreated }) {
       setDeadline(null);
     } catch (error) {
       console.error("Error adding task: ", error);
+      setError('Failed to create task. Please try again.');
     }
   };
 
   return (
     <form className="create-task-form" onSubmit={handleSubmit}>
-      <select className="form-select" value={projectId} onChange={(e) => setProjectId(e.target.value)} required>
+      <select 
+        className="form-select" 
+        value={projectId} 
+        onChange={handleProjectChange}
+        required
+      >
         <option value="">Select Project</option>
         {projects.map(project => (
           <option key={project.id} value={project.id}>{project.name}</option>
         ))}
       </select>
-      <p>Masukkan Task Name</p>
+
+      <p>Task Name</p>
       <input
         className="form-input"
         type="text"
@@ -71,7 +134,8 @@ function CreateTaskForm({ projects, onTaskCreated }) {
         onChange={(e) => setTaskName(e.target.value)}
         required
       />
-      <p>Masukkan Deskripsi Task</p>
+
+      <p>Task Description</p>
       <textarea
         className="form-textarea"
         placeholder="Description"
@@ -79,26 +143,54 @@ function CreateTaskForm({ projects, onTaskCreated }) {
         onChange={(e) => setDescription(e.target.value)}
         required
       />
-      <p>Pilih user (hold ctrl for multiple user) : </p>
-      <select className="form-select multiple" multiple value={assignedTo} onChange={handleUserChange} required>
-        {users.map(user => (
-          <option key={user.id} value={user.id}>
-            {user.username}
-          </option>
-        ))}
-      </select>
-      <div className="assigned-users">
-        {assignedTo.map(userId => {
-          const user = users.find(u => u.id === userId);
-          return (
-            <div key={userId} className="assigned-user">
-              <img src={user.avatarURL} alt={user.username} className="user-avatar" />
-              <span className="user-name">{user.username}</span>
-            </div>
-          );
-        })}
-      </div>
-      <p>Select Deadline</p>
+
+      <p>Assign To (hold Ctrl for multiple)</p>
+      {loading ? (
+        <div>Loading project members...</div>
+      ) : (
+        <>
+          <select 
+            className="form-select multiple" 
+            multiple 
+            value={assignedTo} 
+            onChange={handleUserChange}
+            required
+            disabled={!projectId || loading}
+          >
+            {projectMembers.map(member => (
+              <option key={member.id} value={member.id}>
+                {member.username || member.email}
+              </option>
+            ))}
+          </select>
+
+          {projectMembers.length === 0 && projectId && !loading && (
+            <div className="info-message">No members found in this project</div>
+          )}
+        </>
+      )}
+
+      {assignedTo.length > 0 && (
+        <div className="assigned-users">
+          {assignedTo.map(userId => {
+            const user = projectMembers.find(u => u.id === userId);
+            return user && (
+              <div key={userId} className="assigned-user">
+                {user.avatarURL && (
+                  <img 
+                    src={user.avatarURL} 
+                    alt={user.username || user.email} 
+                    className="user-avatar" 
+                  />
+                )}
+                <span className="user-name">{user.username || user.email}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p>Deadline</p>
       <DatePicker
         selected={deadline}
         onChange={(date) => setDeadline(date)}
@@ -106,8 +198,18 @@ function CreateTaskForm({ projects, onTaskCreated }) {
         className="form-input"
         placeholderText="Select a deadline"
         required
+        minDate={new Date()}
       />
-      <button className="form-button" type="submit">Create Task</button>
+
+      {error && <div className="error-message">{error}</div>}
+      
+      <button 
+        className="form-button" 
+        type="submit"
+        disabled={loading}
+      >
+        Create Task
+      </button>
     </form>
   );
 }

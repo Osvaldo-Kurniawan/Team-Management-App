@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+// src/components/Sidebar.js
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { deleteProjectAndTasks } from '../firebase';
+import { deleteProjectAndTasks, getCurrentUser } from '../firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 import './Sidebar.css';
 
 function Sidebar({ projects, onSelectProject, onProjectDeleted }) {
@@ -8,6 +11,30 @@ function Sidebar({ projects, onSelectProject, onProjectDeleted }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState(null);
+  const [userProjects, setUserProjects] = useState([]);
+
+  useEffect(() => {
+    const fetchUserProjects = async () => {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) return;
+
+      const membershipQuery = query(
+        collection(db, 'projectMembers'),
+        where('userId', '==', currentUser.uid)
+      );
+      
+      const membershipDocs = await getDocs(membershipQuery);
+      const projectIds = membershipDocs.docs.map(doc => doc.data().projectId);
+      
+      const filteredProjects = projects.filter(project => 
+        projectIds.includes(project.id)
+      );
+      
+      setUserProjects(filteredProjects);
+    };
+
+    fetchUserProjects();
+  }, [projects]);
 
   const handleProjectClick = (project) => {
     setActiveProject(project.id);
@@ -44,7 +71,7 @@ function Sidebar({ projects, onSelectProject, onProjectDeleted }) {
     <div className="sidebar">
       <h2>Projects</h2>
       <ul className="links">
-        {projects.map((project) => (
+        {userProjects.map((project) => (
           <li 
             key={project.id} 
             onClick={() => handleProjectClick(project)}
@@ -70,7 +97,9 @@ function Sidebar({ projects, onSelectProject, onProjectDeleted }) {
           <button onClick={handleConfirmDelete} disabled={isDeleting}>
             {isDeleting ? 'Deleting...' : 'Confirm'}
           </button>
-          <button onClick={() => setShowConfirmation(false)} disabled={isDeleting}>Cancel</button>
+          <button onClick={() => setShowConfirmation(false)} disabled={isDeleting}>
+            Cancel
+          </button>
         </div>
       )}
     </div>

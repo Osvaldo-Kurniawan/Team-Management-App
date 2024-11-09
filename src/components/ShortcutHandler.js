@@ -1,4 +1,4 @@
-// Create a new component: src/components/ShortcutHandler.js
+// src/components/ShortcutHandler.js
 import { useEffect } from 'react';
 
 const ShortcutHandler = () => {

@@ -1,3 +1,4 @@
+// src/components/CommentSection.js
 import React, { useState, useEffect } from 'react';
 import { db, auth, fetchData } from '../firebase';
 import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, getDoc, doc } from 'firebase/firestore';
@@ -20,7 +21,6 @@ function CommentSection({ taskId }) {
         });
       setComments(filteredComments);
       
-      // Fetch user data for each comment
       const userIds = [...new Set(filteredComments.map(comment => comment.userId))];
       const userDataPromises = userIds.map(userId => getDoc(doc(db, 'users', userId)));
       const userSnapshots = await Promise.all(userDataPromises);
@@ -49,7 +49,6 @@ function CommentSection({ taskId }) {
       }));
       setComments(updatedComments);
 
-      // Fetch user data for new comments
       const newUserIds = updatedComments
         .filter(comment => !users[comment.userId])
         .map(comment => comment.userId);
@@ -82,7 +81,6 @@ function CommentSection({ taskId }) {
         userId: auth.currentUser.uid
       });
 
-      // Immediately add the new comment to the state
       setComments(prevComments => [
         {
           id: newCommentDoc.id,
@@ -111,10 +109,8 @@ function CommentSection({ taskId }) {
       commentDate.getMonth() === now.getMonth() &&
       commentDate.getFullYear() === now.getFullYear()
     ) {
-      // If the comment was made today, return only the time
       return commentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else {
-      // If the comment was made on a different day, return only the date
       return commentDate.toLocaleDateString();
     }
   };

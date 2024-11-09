@@ -1,3 +1,4 @@
+// src/pages/TaskDetail.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
@@ -20,7 +21,6 @@ function TaskDetail() {
         setTask({ id: taskDoc.id, ...taskData });
         setStatus(taskData.status || 'In Progress');
 
-        // Fetch user data for assigned users
         const userDataPromises = taskData.assignedTo.map(userId => getDoc(doc(db, 'users', userId)));
         const userSnapshots = await Promise.all(userDataPromises);
         const userData = userSnapshots.reduce((acc, snapshot) => {
@@ -50,7 +50,7 @@ function TaskDetail() {
 
   if (!task) return <div className="loading">Loading...</div>;
 
-  const formattedDeadline = task.deadline ? new Date(task.deadline.seconds * 1000).toLocaleDateString() : 'No deadline set';
+  const formattedDeadline = task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline set';
 
   return (
     <div className="task-detail">
@@ -59,7 +59,7 @@ function TaskDetail() {
           <h2>{task.name}</h2>
           <p className="task-description">{task.description}</p>
           <div className="deadline-container">
-            <strong>Deadline:</strong>{formattedDeadline}
+            <strong>Deadline:</strong> {formattedDeadline}
           </div>
           <div className="status-container">
             <strong>Status:</strong>
