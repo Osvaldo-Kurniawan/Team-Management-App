@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard';
 import CreateProject from './pages/CreateProject';
 import CreateTask from './pages/CreateTask';
 import TaskDetail from './pages/TaskDetail';
-import UserProfile from './pages/UserProfile';
+import AutoAssignPage from './pages/AutoAssignPage';
 import './App.css';
 import ShortcutHandler from './components/ShortcutHandler';
 
@@ -45,7 +45,7 @@ function App() {
             <Route path="/create-project" element={<PrivateRoute component={CreateProject} />} />
             <Route path="/create-task" element={<PrivateRoute component={CreateTask} />} />
             <Route path="/task/:id" element={<PrivateRoute component={TaskDetail} />} />
-            <Route path="/profile" element={<PrivateRoute component={UserProfile} />} />
+            <Route path="/auto-assign/:projectId" element={<AutoAssignPage />} />
           </Routes>
         </div>
       </Router>

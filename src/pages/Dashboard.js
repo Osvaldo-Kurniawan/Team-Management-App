@@ -1,4 +1,3 @@
-// src/pages/Dashboard.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchData } from '../firebase';
@@ -53,10 +52,16 @@ function Dashboard() {
         <h1>Dashboard</h1>
         {selectedProject ? (
           <div>
-            <div className="fab-container">
-              <Link to="/create-task" className="fab">
-                <span className="plus-icon">+</span>
-                <span className="fab-text">Add Task</span>
+            <div className="action-buttons">
+              <Link to="/create-task" className="action-button">
+                Add Task
+              </Link>
+              <Link 
+                to={`/auto-assign/${selectedProject.id}`} 
+                state={{ projectId: selectedProject.id }}
+                className="action-button"
+              >
+                Auto Assign Tasks
               </Link>
             </div>
             <div className="task-container">

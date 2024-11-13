@@ -1,0 +1,167 @@
+/* src/components/AutoAssignTasks.css */
+.auto-assign-container {
+  position: absolute;
+  top: 5rem;
+  right: 1rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 280px;
+  transition: all 0.3s ease;
+}
+
+.template-section {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.template-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.template-button:hover {
+  background-color: #45a049;
+}
+
+.template-button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.template-info {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.template-info p {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  color: #666;
+}
+
+.template-info ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #666;
+}
+
+.template-info li {
+  margin-bottom: 0.25rem;
+}
+
+.file-input-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+.file-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.file-input-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.file-input-button:hover {
+  background-color: #0056b3;
+}
+
+.file-input-button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* Rest of the existing CSS remains the same */
+.loading {
+  margin-top: 0.75rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.loading::after {
+  content: '';
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.error-message {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.success-message {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background-color: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  color: #16a34a;
+  font-size: 0.85rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+  .auto-assign-container {
+    position: static;
+    width: 100%;
+    margin-top: 1rem;
+    box-shadow: none;
+    padding: 1rem;
+  }
+}
