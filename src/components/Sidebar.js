@@ -1,9 +1,11 @@
 // src/components/Sidebar.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { deleteProjectAndTasks, getCurrentUser } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { 
+  deleteProjectAndTasks, 
+  getCurrentUser, 
+  fetchUserProjects 
+} from '../firebase';
 import './Sidebar.css';
 
 function Sidebar({ projects, onSelectProject, onProjectDeleted }) {
@@ -14,26 +16,13 @@ function Sidebar({ projects, onSelectProject, onProjectDeleted }) {
   const [userProjects, setUserProjects] = useState([]);
 
   useEffect(() => {
-    const fetchUserProjects = async () => {
+    const loadUserProjects = async () => {
       const currentUser = await getCurrentUser();
-      if (!currentUser) return;
-
-      const membershipQuery = query(
-        collection(db, 'projectMembers'),
-        where('userId', '==', currentUser.uid)
-      );
-      
-      const membershipDocs = await getDocs(membershipQuery);
-      const projectIds = membershipDocs.docs.map(doc => doc.data().projectId);
-      
-      const filteredProjects = projects.filter(project => 
-        projectIds.includes(project.id)
-      );
-      
+      const filteredProjects = await fetchUserProjects(currentUser, projects);
       setUserProjects(filteredProjects);
     };
 
-    fetchUserProjects();
+    loadUserProjects();
   }, [projects]);
 
   const handleProjectClick = (project) => {

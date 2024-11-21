@@ -1,9 +1,6 @@
 // src/components/SignupForm.js
 import React, { useState } from 'react';
-import { auth, storage, db } from '../firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { setDoc, doc } from 'firebase/firestore';
+import { signupUser } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import './SignupForm.css';
 
@@ -16,69 +13,24 @@ function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const createUserDocument = async (userId, userData) => {
-    try {
-      await setDoc(doc(db, 'users', userId), {
-        ...userData,
-        createdAt: new Date().toISOString(),
-        online: true
-      });
-      return true;
-    } catch (error) {
-      console.error('Error creating user document:', error);
-      return false;
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
       const userData = {
-        username,
         email,
-        avatarURL: '', 
+        password,
+        username,
+        avatar
       };
 
-      const userDocCreated = await createUserDocument(user.uid, userData);
-      
-      if (!userDocCreated) {
-        throw new Error('Failed to create user document');
-      }
-
-      console.log('Selected avatar file:', avatar);
-
-      if (avatar) {
-        try {
-          const avatarRef = ref(storage, `avatars/${user.uid}`);
-          await uploadBytes(avatarRef, avatar);
-          const avatarURL = await getDownloadURL(avatarRef);
-          
-          console.log('Avatar URL:', avatarURL); // Log avatar URL
-          
-          // Update the user document with avatar URL
-          await setDoc(doc(db, 'users', user.uid), {
-            ...userData,
-            avatarURL,
-          }, { merge: true });
-
-          console.log('User document updated with avatar URL');
-        } catch (avatarError) {
-          console.error('Error uploading avatar:', avatarError);
-          throw avatarError;
-        }
-      }
-
+      await signupUser(userData);
       navigate('/dashboard');
     } catch (error) {
       console.error('Signup error:', error);
       setError(error.message || 'Failed to create account');
-    } finally {
       setIsLoading(false);
     }
   };

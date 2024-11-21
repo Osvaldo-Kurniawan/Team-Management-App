@@ -1,7 +1,6 @@
 // src/components/CreateTaskForm.js
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { fetchProjectMembers, createTask } from '../firebase';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './CreateTaskForm.css';
@@ -17,7 +16,7 @@ function CreateTaskForm({ projects, onTaskCreated }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchProjectMembers = async () => {
+    const loadProjectMembers = async () => {
       if (!projectId) {
         setProjectMembers([]);
         setAssignedTo([]);
@@ -28,35 +27,8 @@ function CreateTaskForm({ projects, onTaskCreated }) {
       setError('');
 
       try {
-        const membersQuery = query(
-          collection(db, 'projectMembers'),
-          where('projectId', '==', projectId)
-        );
-        const membersDocs = await getDocs(membersQuery);
-        
-        if (membersDocs.empty) {
-          setProjectMembers([]);
-          setLoading(false);
-          return;
-        }
-
-        const memberPromises = membersDocs.docs.map(async (memberDoc) => {
-          const userId = memberDoc.data().userId;
-          const userDoc = await getDoc(doc(db, 'users', userId));
-          
-          if (userDoc.exists()) {
-            return {
-              id: userDoc.id,
-              ...userDoc.data()
-            };
-          }
-          return null;
-        });
-
-        const members = await Promise.all(memberPromises);
-        const validMembers = members.filter(member => member !== null);
-        
-        setProjectMembers(validMembers);
+        const members = await fetchProjectMembers(projectId);
+        setProjectMembers(members);
       } catch (error) {
         console.error("Error fetching project members:", error);
         setError('Failed to load project members');
@@ -65,7 +37,7 @@ function CreateTaskForm({ projects, onTaskCreated }) {
       }
     };
 
-    fetchProjectMembers();
+    loadProjectMembers();
   }, [projectId]);
 
   const handleProjectChange = (e) => {
@@ -88,17 +60,12 @@ function CreateTaskForm({ projects, onTaskCreated }) {
         description,
         projectId,
         assignedTo,
-        deadline: deadline ? deadline.toISOString() : null,
-        status: 'pending',
-        createdAt: new Date().toISOString()
+        deadline: deadline ? deadline.toISOString() : null
       };
 
-      const docRef = await addDoc(collection(db, 'tasks'), taskData);
+      const task = await createTask(taskData);
       
-      onTaskCreated({
-        id: docRef.id,
-        ...taskData
-      });
+      onTaskCreated(task);
       
       setTaskName('');
       setDescription('');

@@ -1,7 +1,8 @@
 // src/components/CommentSection.js
-import React, { useState, useEffect } from 'react';
-import { db, auth, fetchData } from '../firebase';
-import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
+import { db, auth } from '../firebase';
+import { fetchComments, addComment, fetchCommentUsers, formatCommentDate } from '../firebase';
+import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import './CommentSection.css';
 
 function CommentSection({ taskId }) {
@@ -9,109 +10,74 @@ function CommentSection({ taskId }) {
   const [newComment, setNewComment] = useState('');
   const [users, setUsers] = useState({});
 
+  const updateUsers = useCallback(async (commentList) => {
+    const newUserIds = commentList
+      .filter(comment => !users[comment.userId])
+      .map(comment => comment.userId);
+    
+    if (newUserIds.length > 0) {
+      const newUserData = await fetchCommentUsers(commentList);
+      setUsers(prevUsers => ({ ...prevUsers, ...newUserData }));
+    }
+  }, [users]);
+
   useEffect(() => {
-    const fetchComments = async () => {
-      const commentsData = await fetchData('comments');
-      const filteredComments = commentsData
-        .filter(comment => comment.taskId === taskId)
-        .sort((a, b) => {
-          const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
-          const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
-          return dateB - dateA;
-        });
-      setComments(filteredComments);
-      
-      const userIds = [...new Set(filteredComments.map(comment => comment.userId))];
-      const userDataPromises = userIds.map(userId => getDoc(doc(db, 'users', userId)));
-      const userSnapshots = await Promise.all(userDataPromises);
-      const userData = userSnapshots.reduce((acc, snapshot) => {
-        if (snapshot.exists()) {
-          acc[snapshot.id] = snapshot.data();
-        }
-        return acc;
-      }, {});
-      setUsers(userData);
+    const loadComments = async () => {
+      try {
+        const initialComments = await fetchComments(taskId);
+        setComments(initialComments);
+
+        const userData = await fetchCommentUsers(initialComments);
+        setUsers(userData);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+      }
     };
 
-    fetchComments();
+    loadComments();
 
-    const q = query(
+    const commentsQuery = query(
       collection(db, 'comments'),
       where('taskId', '==', taskId),
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+    const unsubscribe = onSnapshot(commentsQuery, async (querySnapshot) => {
       const updatedComments = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
       }));
       setComments(updatedComments);
-
-      const newUserIds = updatedComments
-        .filter(comment => !users[comment.userId])
-        .map(comment => comment.userId);
-      
-      if (newUserIds.length > 0) {
-        const newUserDataPromises = newUserIds.map(userId => getDoc(doc(db, 'users', userId)));
-        const newUserSnapshots = await Promise.all(newUserDataPromises);
-        const newUserData = newUserSnapshots.reduce((acc, snapshot) => {
-          if (snapshot.exists()) {
-            acc[snapshot.id] = snapshot.data();
-          }
-          return acc;
-        }, {});
-        setUsers(prevUsers => ({ ...prevUsers, ...newUserData }));
-      }
+      await updateUsers(updatedComments);
     });
 
     return () => unsubscribe();
-  }, [taskId, users]);
+  }, [taskId, updateUsers]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
     try {
-      const newCommentDoc = await addDoc(collection(db, 'comments'), {
+      const newCommentDoc = await addComment(
+        taskId, 
+        newComment, 
+        auth.currentUser.uid
+      );
+
+      const newCommentData = {
+        id: newCommentDoc.id,
         taskId: taskId,
         content: newComment,
-        createdAt: serverTimestamp(),
+        createdAt: new Date(),
         userId: auth.currentUser.uid
-      });
+      };
 
-      setComments(prevComments => [
-        {
-          id: newCommentDoc.id,
-          taskId: taskId,
-          content: newComment,
-          createdAt: new Date(),
-          userId: auth.currentUser.uid
-        },
-        ...prevComments
-      ]);
-
+      setComments(prevComments => [newCommentData, ...prevComments]);
       setNewComment('');
     } catch (error) {
       console.error("Error adding comment: ", error);
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return 'Unknown date';
-    
-    const now = new Date();
-    const commentDate = new Date(date);
-    
-    if (
-      commentDate.getDate() === now.getDate() &&
-      commentDate.getMonth() === now.getMonth() &&
-      commentDate.getFullYear() === now.getFullYear()
-    ) {
-      return commentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-      return commentDate.toLocaleDateString();
     }
   };
 
@@ -130,7 +96,9 @@ function CommentSection({ taskId }) {
                 />
                 <div className="comment-meta">
                   <strong>{users[comment.userId]?.username || 'Anonymous'}</strong>
-                  <span className="comment-time">{formatDate(comment.createdAt)}</span>
+                  <span className="comment-time">
+                    {formatCommentDate(comment.createdAt)}
+                  </span>
                 </div>
               </div>
               <p className="comment-content">{comment.content}</p>

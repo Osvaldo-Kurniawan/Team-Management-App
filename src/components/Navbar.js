@@ -1,20 +1,20 @@
 // src/components/Navbar.js
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
+import { setUserOnlineStatus } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { updateDoc, doc } from 'firebase/firestore';
 import './Navbar.css';
 
 function Navbar() {
   const [user, loading, error] = useAuthState(auth);
 
   const handleLogout = async () => {
-    if (user) {
-      await updateDoc(doc(db, 'users', user.uid), {
-        online: false
-      });
-      auth.signOut();
+    try {
+      await setUserOnlineStatus(user, false);
+      await auth.signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 

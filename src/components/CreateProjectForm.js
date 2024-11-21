@@ -1,7 +1,6 @@
 // src/components/CreateProjectForm.js
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { fetchAllUsers, createProject } from '../firebase';
 import './CreateProjectForm.css';
 
 function CreateProjectForm({ onProjectCreated }) {
@@ -10,16 +9,12 @@ function CreateProjectForm({ onProjectCreated }) {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const usersCollection = await getDocs(collection(db, 'users'));
-      const usersList = usersCollection.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+    const loadUsers = async () => {
+      const usersList = await fetchAllUsers();
       setUsers(usersList);
     };
 
-    fetchUsers();
+    loadUsers();
   }, []);
 
   const handleMemberChange = (e) => {
@@ -30,28 +25,9 @@ function CreateProjectForm({ onProjectCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Create project document
-      const projectRef = await addDoc(collection(db, 'projects'), {
-        name: projectName,
-        createdAt: new Date()
-      });
-
-      // Add project members
-      const projectMembersRef = collection(db, 'projectMembers');
-      await Promise.all(selectedMembers.map(memberId => 
-        addDoc(projectMembersRef, {
-          projectId: projectRef.id,
-          userId: memberId,
-          role: 'member',
-          joinedAt: new Date()
-        })
-      ));
-
-      onProjectCreated({ 
-        id: projectRef.id, 
-        name: projectName,
-        members: selectedMembers 
-      });
+      const project = await createProject(projectName, selectedMembers);
+      
+      onProjectCreated(project);
       
       setProjectName('');
       setSelectedMembers([]);
