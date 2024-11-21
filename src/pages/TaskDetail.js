@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getTaskById, getUsersByIds } from '../firebase';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import CommentSection from '../components/CommentSection';
 import './TaskDetail.css';
 
@@ -15,21 +16,15 @@ function TaskDetail() {
 
   useEffect(() => {
     const fetchTask = async () => {
-      const taskDoc = await getDoc(doc(db, 'tasks', id));
-      if (taskDoc.exists()) {
-        const taskData = taskDoc.data();
-        setTask({ id: taskDoc.id, ...taskData });
+      const taskData = await getTaskById(id);
+      if (taskData) {
+        setTask(taskData);
         setStatus(taskData.status || 'In Progress');
 
-        const userDataPromises = taskData.assignedTo.map(userId => getDoc(doc(db, 'users', userId)));
-        const userSnapshots = await Promise.all(userDataPromises);
-        const userData = userSnapshots.reduce((acc, snapshot) => {
-          if (snapshot.exists()) {
-            acc[snapshot.id] = snapshot.data();
-          }
-          return acc;
-        }, {});
-        setAssignedUsers(userData);
+        if (taskData.assignedTo) {
+          const userData = await getUsersByIds(taskData.assignedTo);
+          setAssignedUsers(userData);
+        }
       }
     };
     fetchTask();

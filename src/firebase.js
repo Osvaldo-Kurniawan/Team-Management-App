@@ -1,33 +1,9 @@
 // src/Firebase.js
 import { initializeApp } from 'firebase/app';
 
-import { 
-  getAuth, 
-  onAuthStateChanged,
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  where, 
-  query,  
-  orderBy, 
-  serverTimestamp,
-  doc, 
-  addDoc,
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  updateDoc ,
-  writeBatch
-} from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getStorage,
-  getDownloadURL 
-} from 'firebase/storage';
+import { getAuth,  onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, collection, where, query,  orderBy, serverTimestamp,doc, addDoc,getDoc, getDocs, setDoc, updateDoc ,deleteDoc,writeBatch} from 'firebase/firestore';
+import { ref, uploadBytes, getStorage,getDownloadURL } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyA4jvpU6zDzXqvVF0i6eOYTR5noEOkazN0",
@@ -57,39 +33,7 @@ export const fetchData = async (collectionName) => {
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-export const fetchUserDetails = async (userIds) => {
-  const usersCollection = collection(db, 'users');
-  const userDocs = await Promise.all(userIds.map(userId => getDoc(doc(usersCollection, userId))));
-  
-  return userDocs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-};
-
-export const deleteProjectAndTasks = async (projectId) => {
-  const batch = writeBatch(db);
-
-  const projectRef = doc(db, 'projects', projectId);
-  batch.delete(projectRef);
-
-  const taskQuery = query(collection(db, 'tasks'), where('projectId', '==', projectId));
-  const taskSnapshot = await getDocs(taskQuery);
-
-  for (const taskDoc of taskSnapshot.docs) {
-    const taskRef = taskDoc.ref;
-    batch.delete(taskRef);
-
-    const commentQuery = query(collection(db, 'comments'), where('taskId', '==', taskDoc.id));
-    const commentSnapshot = await getDocs(commentQuery);
-
-    commentSnapshot.forEach((commentDoc) => {
-      batch.delete(commentDoc.ref);
-    });
-  }
-
-  await batch.commit();
-};
+// Auto Assign Task Function
 
 export const addWorkingDays = (date, days) => {
   const result = new Date(date);
@@ -243,81 +187,45 @@ export const autoAssignTasks = async (tasks, projectId) => {
   return { assignedTasks, unassignableTasks };
 };
 
-// Fungsi baru untuk mengambil komentar berdasarkan taskId
-export const fetchComments = async (taskId) => {
-  const commentsQuery = query(
-    collection(db, 'comments'),
-    where('taskId', '==', taskId),
-    orderBy('createdAt', 'desc')
+// Project and Task CRUD Function
+
+export const fetchUserProjects = async (currentUser, allProjects) => {
+  if (!currentUser) return [];
+
+  const membershipQuery = query(
+    collection(db, 'projectMembers'),
+    where('userId', '==', currentUser.uid)
   );
-
-  const querySnapshot = await getDocs(commentsQuery);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
-  }));
+  
+  const membershipDocs = await getDocs(membershipQuery);
+  const projectIds = membershipDocs.docs.map(doc => doc.data().projectId);
+  
+  return allProjects.filter(project => 
+    projectIds.includes(project.id)
+  );
 };
 
-// Fungsi baru untuk menambah komentar
-export const addComment = async (taskId, content, userId) => {
-  return await addDoc(collection(db, 'comments'), {
-    taskId: taskId,
-    content: content,
-    createdAt: serverTimestamp(),
-    userId: userId
-  });
-};
-
-// Fungsi baru untuk mengambil pengguna yang membuat komentar
-export const fetchCommentUsers = async (comments) => {
-  const userIds = [...new Set(comments.map(comment => comment.userId))];
-  const userDataPromises = userIds.map(userId => getDoc(doc(db, 'users', userId)));
-  const userSnapshots = await Promise.all(userDataPromises);
-  
-  return userSnapshots.reduce((acc, snapshot) => {
-    if (snapshot.exists()) {
-      acc[snapshot.id] = snapshot.data();
-    }
-    return acc;
-  }, {});
-};
-
-// Fungsi utilitas untuk format tanggal
-export const formatCommentDate = (date) => {
-  if (!date) return 'Unknown date';
-  
-  const now = new Date();
-  const commentDate = new Date(date);
-  
-  if (
-    commentDate.getDate() === now.getDate() &&
-    commentDate.getMonth() === now.getMonth() &&
-    commentDate.getFullYear() === now.getFullYear()
-  ) {
-    return commentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else {
-    return commentDate.toLocaleDateString();
+export const fetchFilteredData = async (collectionName, filterField, filterValue) => {
+  try {
+    const q = query(
+      collection(db, collectionName), 
+      where(filterField, '==', filterValue)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error(`Error fetching filtered ${collectionName}:`, error);
+    return [];
   }
-};
-
-export const fetchAllUsers = async () => {
-  const usersCollection = await getDocs(collection(db, 'users'));
-  return usersCollection.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
 };
 
 export const createProject = async (projectName, selectedMembers) => {
   try {
-    // Create project document
     const projectRef = await addDoc(collection(db, 'projects'), {
       name: projectName,
       createdAt: new Date()
     });
 
-    // Add project members
     const projectMembersRef = collection(db, 'projectMembers');
     await Promise.all(selectedMembers.map(memberId => 
       addDoc(projectMembersRef, {
@@ -335,6 +243,32 @@ export const createProject = async (projectName, selectedMembers) => {
     };
   } catch (error) {
     console.error("Error adding project: ", error);
+    throw error;
+  }
+};
+
+export const fetchAllUsers = async () => {
+  const usersCollection = await getDocs(collection(db, 'users'));
+  return usersCollection.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+};
+
+export const createTask = async (taskData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'tasks'), {
+      ...taskData,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    });
+    
+    return {
+      id: docRef.id,
+      ...taskData
+    };
+  } catch (error) {
+    console.error("Error adding task: ", error);
     throw error;
   }
 };
@@ -367,23 +301,148 @@ export const fetchProjectMembers = async (projectId) => {
   return members.filter(member => member !== null);
 };
 
-export const createTask = async (taskData) => {
-  try {
-    const docRef = await addDoc(collection(db, 'tasks'), {
-      ...taskData,
-      status: 'pending',
-      createdAt: new Date().toISOString()
+export const deleteProjectAndTasks = async (projectId) => {
+  const batch = writeBatch(db);
+
+  const projectRef = doc(db, 'projects', projectId);
+  batch.delete(projectRef);
+
+  const taskQuery = query(collection(db, 'tasks'), where('projectId', '==', projectId));
+  const taskSnapshot = await getDocs(taskQuery);
+
+  for (const taskDoc of taskSnapshot.docs) {
+    const taskRef = taskDoc.ref;
+    batch.delete(taskRef);
+
+    const commentQuery = query(collection(db, 'comments'), where('taskId', '==', taskDoc.id));
+    const commentSnapshot = await getDocs(commentQuery);
+
+    commentSnapshot.forEach((commentDoc) => {
+      batch.delete(commentDoc.ref);
     });
-    
-    return {
-      id: docRef.id,
-      ...taskData
-    };
+  }
+
+  await batch.commit();
+};
+
+export const getTaskById = async (taskId) => {
+  const taskDoc = await getDoc(doc(db, 'tasks', taskId));
+  return taskDoc.exists() ? { id: taskDoc.id, ...taskDoc.data() } : null;
+};
+
+export const deleteTask = async (taskId) => {
+  try {
+    await deleteDoc(doc(db, 'tasks', taskId));
+    return true;
   } catch (error) {
-    console.error("Error adding task: ", error);
-    throw error;
+    console.error('Error deleting task:', error);
+    return false;
   }
 };
+
+export const deleteProject = async (projectId) => {
+  try {
+    await deleteDoc(doc(db, 'projects', projectId));
+    return true;
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    return false;
+  }
+};
+
+export const fetchTaskDetails = async (taskId) => {
+  try {
+    const taskDoc = await getDoc(doc(db, 'tasks', taskId));
+    if (taskDoc.exists()) {
+      const taskData = taskDoc.data();
+      
+      const userDataPromises = taskData.assignedTo.map(userId => getDoc(doc(db, 'users', userId)));
+      const userSnapshots = await Promise.all(userDataPromises);
+      
+      const userData = userSnapshots.reduce((acc, snapshot) => {
+        if (snapshot.exists()) {
+          acc[snapshot.id] = snapshot.data();
+        }
+        return acc;
+      }, {});
+
+      return {
+        task: { id: taskDoc.id, ...taskData },
+        assignedUsers: userData
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching task details:', error);
+    return null;
+  }
+};
+
+export const updateTaskStatus = async (taskId, newStatus) => {
+  try {
+    await updateDoc(doc(db, 'tasks', taskId), { status: newStatus });
+    return true;
+  } catch (error) {
+    console.error('Error updating task status:', error);
+    return false;
+  }
+};
+
+export const fetchComments = async (taskId) => {
+  const commentsQuery = query(
+    collection(db, 'comments'),
+    where('taskId', '==', taskId),
+    orderBy('createdAt', 'desc')
+  );
+
+  const querySnapshot = await getDocs(commentsQuery);
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
+  }));
+};
+
+export const addComment = async (taskId, content, userId) => {
+  return await addDoc(collection(db, 'comments'), {
+    taskId: taskId,
+    content: content,
+    createdAt: serverTimestamp(),
+    userId: userId
+  });
+};
+
+export const fetchCommentUsers = async (comments) => {
+  const userIds = [...new Set(comments.map(comment => comment.userId))];
+  const userDataPromises = userIds.map(userId => getDoc(doc(db, 'users', userId)));
+  const userSnapshots = await Promise.all(userDataPromises);
+  
+  return userSnapshots.reduce((acc, snapshot) => {
+    if (snapshot.exists()) {
+      acc[snapshot.id] = snapshot.data();
+    }
+    return acc;
+  }, {});
+};
+
+export const formatCommentDate = (date) => {
+  if (!date) return 'Unknown date';
+  
+  const now = new Date();
+  const commentDate = new Date(date);
+  
+  if (
+    commentDate.getDate() === now.getDate() &&
+    commentDate.getMonth() === now.getMonth() &&
+    commentDate.getFullYear() === now.getFullYear()
+  ) {
+    return commentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else {
+    return commentDate.toLocaleDateString();
+  }
+};
+
+// Authentication Function
 
 export const loginUser = async (email, password) => {
   try {
@@ -410,11 +469,9 @@ export const signupUser = async (userData) => {
   } = userData;
 
   try {
-    // Create user authentication
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Base user data
     const baseUserData = {
       username,
       email,
@@ -423,16 +480,13 @@ export const signupUser = async (userData) => {
       online: true
     };
 
-    // Create user document in Firestore
     await setDoc(doc(db, 'users', user.uid), baseUserData);
 
-    // Handle avatar upload if present
     if (avatar) {
       const avatarRef = ref(storage, `avatars/${user.uid}`);
       await uploadBytes(avatarRef, avatar);
       const avatarURL = await getDownloadURL(avatarRef);
 
-      // Update user document with avatar URL
       await setDoc(
         doc(db, 'users', user.uid), 
         { avatarURL }, 
@@ -452,20 +506,26 @@ export const signupUser = async (userData) => {
   }
 };
 
-export const fetchUserProjects = async (currentUser, allProjects) => {
-  if (!currentUser) return [];
+export const fetchUserDetails = async (userIds) => {
+  const usersCollection = collection(db, 'users');
+  const userDocs = await Promise.all(userIds.map(userId => getDoc(doc(usersCollection, userId))));
+  
+  return userDocs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+};
 
-  const membershipQuery = query(
-    collection(db, 'projectMembers'),
-    where('userId', '==', currentUser.uid)
-  );
+export const getUsersByIds = async (userIds) => {
+  const userDataPromises = userIds.map(userId => getDoc(doc(db, 'users', userId)));
+  const userSnapshots = await Promise.all(userDataPromises);
   
-  const membershipDocs = await getDocs(membershipQuery);
-  const projectIds = membershipDocs.docs.map(doc => doc.data().projectId);
-  
-  return allProjects.filter(project => 
-    projectIds.includes(project.id)
-  );
+  return userSnapshots.reduce((acc, snapshot) => {
+    if (snapshot.exists()) {
+      acc[snapshot.id] = snapshot.data();
+    }
+    return acc;
+  }, {});
 };
 
 export const setUserOnlineStatus = async (user, status) => {
